@@ -18,15 +18,18 @@ package org.nerdsofprey.secrets.provider.mock;
 import org.nerdsofprey.secrets.provider.CloudProvider;
 
 public class MockProvider implements CloudProvider {
-  @Override public boolean performCopy(String source, String destination, boolean overwrite, boolean dryRun) {
+  @Override
+  public boolean performCopy(String source, String destination, boolean overwrite, boolean dryRun) {
+    return !source.equals("/autofail/");
+  }
+
+  @Override
+  public boolean performDelete(String source, boolean dryRun) {
     return true;
   }
 
-  @Override public boolean performDelete(String source, boolean dryRun) {
-    return true;
-  }
-
-  @Override public boolean performMove(String source, String destination, boolean overwrite, boolean dryRun) {
+  @Override
+  public boolean performMove(String source, String destination, boolean overwrite, boolean dryRun) {
     return true;
   }
 }

@@ -68,10 +68,11 @@ public class Executor {
     if (exec.help) {
       cliargs.usage();
     } else {
-      if (exec.validateParameters()) {
+      String validateMessage = exec.validateParameters();
+      if (validateMessage.isBlank()) {
         exec.run();
       } else {
-        throw new RuntimeException("Could not perform the operation due to invalid arguments");
+        throw new RuntimeException(validateMessage);
       }
     }
   }
@@ -101,17 +102,15 @@ public class Executor {
     }
   }
 
-  private boolean validateParameters() {
+  private String validateParameters() {
     if (move && delete) {
-      log.error("Move and delete arguments may not be declared together");
-      return false;
+      return "Move and delete arguments may not be declared together";
     }
 
     if (!delete && (destination == null || destination.isBlank())) {
-      log.error("For copy or move operations, you must declare a valid destination");
-      return false;
+      return "For copy or move operations, you must declare a valid destination";
     }
 
-    return true;
+    return "";
   }
 }
