@@ -14,63 +14,104 @@
  * limitations under the License.
  */
 package org.nerdsofprey.secrets.cli;
+
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import org.nerdsofprey.secrets.aws.AWSHandler;
+import org.nerdsofprey.secrets.provider.CloudProvider;
+import org.nerdsofprey.secrets.provider.aws.AWSProvider;
+import org.nerdsofprey.secrets.provider.aws.DependencyFactory;
+import org.nerdsofprey.secrets.provider.mock.MockProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Executor {
-    private static final Logger log = LoggerFactory.getLogger(Executor.class);
+  private static final Logger log = LoggerFactory.getLogger(Executor.class);
 
-    // command line arguments. See the documentation at http://jcommander.org
-    @Parameter(names={"--dry-run", "-d"}, description = "Logs actions that would be taken by ssm-cp with respect to the other arguments provided, but does not perform any actions. Defaults to false")
-    boolean dryRun = false;
+  // command line arguments. See the documentation at http://jcommander.org
+  @Parameter(names = { "--dry-run",
+      "-d" }, description = "Logs actions that would be taken by ssm-cp with respect to the other arguments provided, but does not perform any actions. Defaults to false")
+  private boolean dryRun = false;
 
-    @Parameter(names={"--source", "-src"}, required = true, description = "Source SSM path. A single variable should be specified with its full name or a 'directory'/prefix can be specified by including a trailing forward slash (/). '--source /path/to/SPECIFIC_VARIABLE' would choose a single variable as the source, while '--source /path/to/some/prefix/' would specify all variables recursively that begin with the prefix /path/to/some/prefix")
-    String source;
+  @Parameter(names = { "--source",
+      "-src" }, required = true, description = "Source SSM path. A single variable should be specified with its full name or a 'directory'/prefix can be specified by including a trailing forward slash (/). '--source /path/to/SPECIFIC_VARIABLE' would choose a single variable as the source, while '--source /path/to/some/prefix/' would specify all variables recursively that begin with the prefix /path/to/some/prefix")
+  private String source;
 
-    @Parameter(names={"--destination", "-dest"}, required = true, description = "Destination SSM path. This should be specified as a prefix (e.g. '/path/to/some/prefix/') -- if you neglect to include a trailing slash one will be provided for you")
-    String destination;
+  @Parameter(names = { "--destination",
+      "-dest" }, description = "Destination SSM path. This should be specified as a prefix (e.g. '/path/to/some/prefix/') -- if you neglect to include a trailing slash one will be provided for you")
+  private String destination;
 
-    @Parameter(names={"--mv"}, description = "Perform a move (copy to the destination and delete the original) rather than a straight copy. Defaults to false")
-    boolean move = false;
+  @Parameter(names = { "--move",
+      "-mv" }, description = "Perform a move (copy to the destination and delete the original) rather than a straight copy. Defaults to false")
+  private boolean move = false;
 
-    @Parameter(names={"--mock-provider"}, description = "Use an in-memory mock of a cloud provider rather than AWS. Defaults to false")
-    boolean mock = false;
+  @Parameter(names = { "--delete", "-rm" }, description = "Perform a deletion on the source path. Defaults to false")
+  private boolean delete = false;
 
-    @Parameter(names = "--help", help = true)
-    private boolean help;
+  @Parameter(names = {
+      "--mock-provider" }, description = "Use an in-memory mock of a cloud provider rather than AWS. Defaults to false")
+  private boolean mock = false;
 
+  @Parameter(names = "--help", help = true, description = "Display this help message and exit")
+  private boolean help;
 
-    public static void main(String[] args) {
-        log.info("ssm-cp");
-        Executor exec = new Executor();
+  @Parameter(names = {
+      "--overwrite" }, description = "Overwrite the destination parameter if it exists. Defaults to false")
+  private boolean overwrite = false;
 
-        JCommander cliargs = JCommander.newBuilder().addObject(exec).build();
-        cliargs.parse(args);
+  public static void main(String[] args) {
+    log.info("ssm-cp");
+    Executor exec = new Executor();
 
-        if (exec.help) {
-            cliargs.usage();
-        } else {
-            // TODO: VALIDATE PARAMS HERE
-            exec.run();
-        }
+    JCommander cliargs = JCommander.newBuilder().addObject(exec).build();
+    cliargs.parse(args);
+
+    if (exec.help) {
+      cliargs.usage();
+    } else {
+      if (exec.validateParameters()) {
+        exec.run();
+      } else {
+        throw new RuntimeException("Could not perform the operation due to invalid arguments");
+      }
+    }
+  }
+
+  private void run() {
+    CloudProvider provider;
+    if (mock) {
+      provider = new MockProvider();
+    } else {
+      provider = new AWSProvider(DependencyFactory.ssmClient());
     }
 
-    private void run() {
-        if (mock) {
-            log.info("Mock provider is not yet implemented.");
-        } else { // AWS
-            if (move) {
-                log.info("mv argument is not yet implemented.");
-            } else if (dryRun) {
-                log.info("Setting up an instance of the AWS SSM client.");
-                AWSHandler handler = new AWSHandler();
-                handler.performDryRun(source, destination);
-            } else {
-                log.info("copy argument without dryRun set is not yet implemented.");
-            }
-        }
+    boolean success = false;
+    if (move) {
+      success = provider.performMove(source, destination, overwrite, dryRun);
+    } else if (delete) {
+      success = provider.performDelete(source, dryRun);
+    } else {
+      // copy
+      success = provider.performCopy(source, destination, overwrite, dryRun);
     }
+
+    if (success) {
+      log.info("The operation completed successfully.");
+    } else {
+      throw new RuntimeException("Errors occurred during the operation; view the log for details.");
+    }
+  }
+
+  private boolean validateParameters() {
+    if (move && delete) {
+      log.error("Move and delete arguments may not be declared together");
+      return false;
+    }
+
+    if (!delete && (destination == null || destination.isBlank())) {
+      log.error("For copy or move operations, you must declare a valid destination");
+      return false;
+    }
+
+    return true;
+  }
 }

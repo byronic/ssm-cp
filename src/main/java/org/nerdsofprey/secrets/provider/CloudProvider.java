@@ -13,25 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.nerdsofprey.secrets.provider;
 
-package org.nerdsofprey.secrets.aws;
+import java.util.List;
 
-import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
-import software.amazon.awssdk.services.ssm.SsmClient;
+public interface CloudProvider {
+  boolean performCopy(String source, String destination, boolean overwrite, boolean dryRun);
 
-/**
- * The module containing all dependencies required by the {@link AWSHandler}.
- */
-public class DependencyFactory {
+  boolean performDelete(String source, boolean dryRun);
 
-    private DependencyFactory() {}
-
-    /**
-     * @return an instance of SsmClient
-     */
-    public static SsmClient ssmClient() {
-        return SsmClient.builder()
-                       .httpClientBuilder(UrlConnectionHttpClient.builder())
-                       .build();
-    }
+  boolean performMove(String source, String destination, boolean overwrite, boolean dryRun);
 }
