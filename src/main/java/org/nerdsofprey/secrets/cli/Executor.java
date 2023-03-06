@@ -27,6 +27,8 @@ import org.slf4j.LoggerFactory;
 public class Executor {
   private static final Logger log = LoggerFactory.getLogger(Executor.class);
 
+  private static final String PROGRAM_NAME = "ssm-cp";
+
   // command line arguments. See the documentation at http://jcommander.org
   @Parameter(names = { "--dry-run",
       "-d" }, description = "Logs actions that would be taken by ssm-cp with respect to the other arguments provided, but does not perform any actions. Defaults to false")
@@ -59,10 +61,11 @@ public class Executor {
   private boolean overwrite = false;
 
   public static void main(String[] args) {
-    log.info("ssm-cp");
+    log.info(PROGRAM_NAME);
     Executor exec = new Executor();
 
     JCommander cliargs = JCommander.newBuilder().addObject(exec).build();
+    cliargs.setProgramName(PROGRAM_NAME);
     cliargs.parse(args);
 
     if (exec.help) {
