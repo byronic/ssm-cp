@@ -2,13 +2,11 @@
 
 `ssm-cp` is the AWS SSM parameter copy and move functionality missing from the AWS cli.
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/I2I6J9O0I)
-
 ## Getting Help / Troubleshooting
 
 Feel free to create an issue on this project's [Issues page](https://github.com/byronic/ssm-cp/issues).
 
-For expedited processing, include the issue number in your donation: [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/I2I6J9O0I)
+For expedited processing, include the issue number in a donation with your issue number: [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/I2I6J9O0I)
 
 ## Prerequisites
 
